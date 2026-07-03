@@ -38,6 +38,17 @@ certior.yml               # your profile + mode — edit any time, no restart
 Requires Node 18+. If Node is somehow missing the hook fails open (allows
 everything) and warns at session start.
 
+## Why not just Claude Code's built-in permissions?
+
+Claude Code already prompts for permission — Certior adds the parts it doesn't:
+
+- **Curated defaults you don't write.** Ready-made `personal` / `team` / `production` / `regulated` profiles, instead of hand-maintaining allow/deny rules.
+- **Resists evasion.** Rules run against a *parsed, normalized* command, so `c""url`, `sudo curl`, `/usr/bin/curl`, `FOO=1 curl` don't slip past — and secret reads via `source .env`, `cp .env /tmp/x`, or `node -e "readFileSync('.env')"` are caught, not just a literal `Read .env`.
+- **A tamper-evident audit trail.** Every decision is a hash-chained receipt you can `verify` — a record of what the agent was allowed to do, which a prompt you clicked through never leaves.
+- **A checked safety floor.** `certior-guard check` *exhaustively* verifies that secrets, disk wipes, remote-code-exec, and exfiltration can't be allowed by any profile or mode.
+
+It runs **locally, sends nothing anywhere, has zero dependencies, and is Apache-2.0.** It only ever *narrows* what the agent may do — an allowed call proceeds to Claude Code's normal flow untouched.
+
 ## Configuration
 
 `certior.yml` holds two values. Changes take effect on the next tool call.
