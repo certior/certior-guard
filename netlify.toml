@@ -1,0 +1,4 @@
+# Certior landing — static site in site/, deployed to certior.io
+[build]
+  publish = "site"
+  command = ""
