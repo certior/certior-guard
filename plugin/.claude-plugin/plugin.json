@@ -1,0 +1,12 @@
+{
+  "name": "certior-guard",
+  "displayName": "Certior Guard",
+  "description": "Safe defaults for Claude Code — block secrets & dangerous commands, ask before deploys/migrations, log every decision, before the action runs.",
+  "version": "0.1.0",
+  "author": {"name": "Certior", "email": "hello@certior.io"},
+  "homepage": "https://github.com/certior/certior-guard",
+  "repository": "https://github.com/certior/certior-guard",
+  "license": "Apache-2.0",
+  "keywords": ["security", "policy", "guardrail", "safety", "certior", "claude-code"],
+  "hooks": "./hooks/hooks.json"
+}

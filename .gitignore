@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Certior Guard writes these into a user's repo — never commit them
+certior.yml
+.certior/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
