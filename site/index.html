@@ -4,158 +4,169 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Certior — Safe defaults for Claude Code</title>
-<meta name="description" content="Certior Guard checks every Claude Code action before it runs — blocks secrets and dangerous commands, asks before deploys and migrations, and logs every decision. Zero dependencies, two-minute install.">
+<meta name="description" content="One command adds safe defaults to Claude Code: it blocks secrets and dangerous commands, asks before deploys and migrations, and logs every decision. Zero config, zero dependencies.">
 <style>
-  :root{ --bg:#0B1020; --panel:#111a30; --line:#1e2a44;
-    --accent:#4CC9A0; --white:#F5F7FA; --muted:#9fabbd; }
+  :root{ --bg:#0A0E1A; --panel:#121a30; --line:#20304f; --accent:#4CE0A8; --white:#F3F6FB; --muted:#96a3b8; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html{ scroll-behavior:smooth; }
-  body{ background:var(--bg); color:var(--white); line-height:1.55;
+  body{ background:var(--bg); color:var(--white); line-height:1.55; -webkit-font-smoothing:antialiased;
     font-family:"Segoe UI",Inter,system-ui,-apple-system,sans-serif; }
   a{ color:inherit; text-decoration:none; }
-  .wrap{ max-width:1040px; margin:0 auto; padding:0 24px; }
+  .wrap{ width:100%; max-width:1200px; margin:0 auto; padding:0 32px; }
   .accent{ color:var(--accent); }
   code{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
 
-  nav{ display:flex; align-items:center; justify-content:space-between;
-    padding:20px 24px; max-width:1040px; margin:0 auto; }
-  .brand{ font-weight:800; letter-spacing:.14em; color:var(--accent); }
-  nav .links a{ color:var(--muted); margin-left:22px; font-size:15px; }
+  nav{ display:flex; align-items:center; justify-content:space-between; padding:22px 0; }
+  .brand{ font-weight:800; letter-spacing:.16em; color:var(--accent); }
+  nav .links a{ color:var(--muted); margin-left:26px; font-size:15px; }
   nav .links a:hover{ color:var(--white); }
 
-  header{ padding:7vh 0 4vh; }
-  .kicker{ color:var(--accent); font-weight:700; letter-spacing:.14em;
-    text-transform:uppercase; font-size:13px; margin-bottom:18px; }
-  h1{ font-size:clamp(30px,5vw,52px); line-height:1.08; font-weight:800;
-    max-width:15ch; margin-bottom:20px; }
-  .lede{ color:var(--muted); font-size:clamp(16px,2.2vw,20px); max-width:52ch;
-    margin-bottom:28px; }
-  .cmd{ display:inline-flex; align-items:center; gap:12px; background:var(--panel);
-    border:1px solid var(--line); border-radius:10px; padding:12px 16px;
-    font-family:ui-monospace,monospace; font-size:16px; }
-  .cmd .dollar{ color:var(--accent); }
-  .cta{ display:flex; gap:14px; flex-wrap:wrap; margin-top:24px; }
-  .btn{ padding:12px 20px; border-radius:10px; font-weight:600; font-size:15px;
-    border:1px solid var(--line); }
-  .btn.primary{ background:var(--accent); color:#04120c; border-color:var(--accent); }
+  .hero{ display:grid; grid-template-columns:1.05fr 1fr; gap:56px; align-items:center; padding:7vh 0 6vh; }
+  .kicker{ color:var(--accent); font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+    font-size:13px; margin-bottom:20px; }
+  h1{ font-size:clamp(32px,4.4vw,50px); line-height:1.06; font-weight:800; margin-bottom:20px; }
+  .lede{ color:var(--muted); font-size:19px; max-width:46ch; margin-bottom:30px; }
+  .cmdlabel{ font-size:13px; color:var(--muted); margin-bottom:10px; }
+  .cmd{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:#0e1526;
+    border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-family:ui-monospace,monospace;
+    font-size:17px; max-width:430px; }
+  .cmd button{ background:transparent; border:0; color:var(--muted); cursor:pointer; font-size:13px; }
+  .cmd button:hover{ color:var(--accent); }
+  .meta{ color:var(--muted); font-size:14px; margin-top:14px; }
+  .cta{ display:flex; gap:14px; flex-wrap:wrap; margin-top:28px; }
+  .btn{ padding:13px 22px; border-radius:11px; font-weight:600; font-size:15px; border:1px solid var(--line); }
+  .btn.primary{ background:var(--accent); color:#03130c; border-color:var(--accent); }
   .btn:hover{ transform:translateY(-1px); }
+  .demo img{ width:100%; border-radius:16px; border:1px solid var(--line);
+    box-shadow:0 30px 90px rgba(0,0,0,.6); display:block; }
 
-  .shot{ margin:36px 0 8px; }
-  .shot img{ width:100%; max-width:820px; border-radius:14px;
-    border:1px solid var(--line); box-shadow:0 24px 70px rgba(0,0,0,.5); display:block; }
-
-  section{ padding:52px 0; border-top:1px solid var(--line); }
-  h2{ font-size:clamp(22px,3vw,30px); font-weight:800; margin-bottom:10px; }
-  .sub{ color:var(--muted); max-width:60ch; margin-bottom:28px; }
-  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-  .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px;
-    padding:22px; }
-  .card h3{ font-size:17px; margin-bottom:8px; }
+  section{ padding:58px 0; border-top:1px solid var(--line); }
+  h2{ font-size:clamp(24px,3vw,32px); font-weight:800; margin-bottom:12px; }
+  .sub{ color:var(--muted); max-width:64ch; margin-bottom:34px; font-size:17px; }
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:26px; }
+  .card h3{ font-size:18px; margin-bottom:10px; }
   .card p{ color:var(--muted); font-size:15px; }
-  .tag{ display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em;
-    text-transform:uppercase; padding:3px 9px; border-radius:999px; margin-bottom:12px; }
-  .tag.block{ color:#f88; background:#2a1620; }
-  .tag.ask{ color:#e6c069; background:#2a2414; }
+  .tag{ display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    padding:4px 11px; border-radius:999px; margin-bottom:14px; }
+  .tag.block{ color:#ff8f8f; background:#2a1620; }
+  .tag.ask{ color:#e9c66b; background:#2a2414; }
   .tag.prove{ color:var(--accent); background:#0f2a20; }
 
-  .teams{ background:var(--panel); border:1px solid var(--line); border-radius:16px;
-    padding:34px; display:flex; gap:28px; align-items:center; flex-wrap:wrap; }
-  .teams .col{ flex:1; min-width:260px; }
-  ul.check{ list-style:none; color:var(--muted); }
-  ul.check li{ padding:5px 0 5px 26px; position:relative; }
+  .see{ display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  .see ul{ list-style:none; }
+  .see li{ padding:10px 0 10px 30px; position:relative; color:var(--muted); font-size:16px; }
+  .see li b{ color:var(--white); }
+  .see li::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--accent);
+    position:absolute; left:6px; top:19px; }
+  .box{ background:#0e1526; border:1px solid var(--line); border-radius:14px; padding:22px;
+    font-family:ui-monospace,monospace; font-size:14px; color:var(--muted); line-height:1.9; }
+  .box .deny{ color:#ff8f8f; } .box .ask{ color:#e9c66b; } .box .ok{ color:var(--accent); }
+  .box .dim{ color:#6b7890; }
+
+  .teams{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:38px;
+    display:grid; grid-template-columns:1fr 1fr; gap:34px; align-items:center; }
+  .teams h2{ margin-bottom:14px; }
+  ul.check{ list-style:none; color:var(--muted); font-size:16px; }
+  ul.check li{ padding:6px 0 6px 28px; position:relative; }
   ul.check li::before{ content:"✓"; color:var(--accent); position:absolute; left:0; }
 
-  footer{ border-top:1px solid var(--line); padding:30px 0 50px; color:var(--muted);
-    font-size:14px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-  footer a{ color:var(--muted); } footer a:hover{ color:var(--white); }
-  @media(max-width:720px){ .grid{ grid-template-columns:1fr; } }
+  footer{ border-top:1px solid var(--line); padding:32px 0 56px; color:var(--muted); font-size:14px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  footer a:hover{ color:var(--white); }
+
+  @media(max-width:860px){
+    .hero, .see, .teams{ grid-template-columns:1fr; }
+    .grid{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
-<nav>
-  <div class="brand">CERTIOR</div>
-  <div class="links">
-    <a href="#what">What it does</a>
-    <a href="#teams">For teams</a>
-    <a href="https://github.com/certior/certior-guard">GitHub</a>
+<div class="wrap">
+  <nav>
+    <div class="brand">CERTIOR</div>
+    <div class="links">
+      <a href="#what">What it does</a>
+      <a href="#see">See it work</a>
+      <a href="#teams">For teams</a>
+      <a href="https://github.com/certior/certior-guard">GitHub</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <div class="kicker">Safe defaults for Claude Code</div>
+      <h1>Stop your coding agent before it does something dangerous.</h1>
+      <p class="lede">Certior checks every Claude Code action <b class="accent">before it runs</b> — and blocks the dangerous ones. No config, no account.</p>
+      <div class="cmdlabel">Add it in one command:</div>
+      <div class="cmd">
+        <span><span class="accent">$</span> npx certior-guard init</span>
+        <button onclick="navigator.clipboard&&navigator.clipboard.writeText('npx certior-guard init')">copy</button>
+      </div>
+      <div class="meta">One command · zero dependencies · runs locally, nothing leaves your machine.</div>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/certior/certior-guard">Get started →</a>
+        <a class="btn" href="https://www.npmjs.com/package/certior-guard">npm</a>
+      </div>
+    </div>
+    <div class="demo"><img src="demo.gif" alt="Claude Code tries to read .env and curl|bash — blocked; terraform and git push — held for approval; edit code and run tests — allowed"></div>
   </div>
-</nav>
+</div>
 
 <div class="wrap">
-  <header>
-    <div class="kicker">Safe defaults for Claude Code</div>
-    <h1>Stop your coding agent before it does something dangerous.</h1>
-    <p class="lede">Certior Guard checks every Claude&nbsp;Code action <b class="accent">before it runs</b> —
-      blocks secrets and dangerous commands, asks before deploys and migrations, and logs every
-      decision. Zero dependencies. Two-minute install.</p>
-    <div class="cmd"><span class="dollar">$</span>&nbsp;npx certior-guard init</div>
-    <div class="cta">
-      <a class="btn primary" href="https://github.com/certior/certior-guard">Get started →</a>
-      <a class="btn" href="https://www.npmjs.com/package/certior-guard">View on npm</a>
-    </div>
-    <div class="shot"><img src="demo.gif" alt="certior-guard demo: Claude Code tries to read .env and curl|bash — blocked; terraform and git push — held for approval; edit code and run tests — allowed"></div>
-  </header>
-
   <section id="why">
     <h2>“Don’t” is not a security boundary.</h2>
-    <p class="sub">Coding agents now have a shell, your files, and your cloud credentials.
-      Prompt-injected by a poisoned issue or just careless, an agent will read your <code>.env</code>,
-      run <code>curl | bash</code>, drop a table, or deploy to prod. It’s not misalignment —
-      nothing bounds what the agent is <i>allowed</i> to do. Certior is that boundary.</p>
+    <p class="sub">Coding agents have a shell, your files, and your cloud credentials. Prompt-injected or careless, an agent will read your <code>.env</code>, run <code>curl | bash</code>, drop a table, or deploy to prod. Nothing bounds what it’s <i>allowed</i> to do. Certior is that boundary.</p>
   </section>
 
   <section id="what">
     <h2>Block. Ask. Prove.</h2>
-    <p class="sub">One PreToolUse hook. Every Bash / Edit / Read / WebFetch / MCP call is checked
-      first — with a reason and a local receipt. Choose a profile
-      (<code>personal</code>&nbsp;/&nbsp;<code>team</code>&nbsp;/&nbsp;<code>production</code>&nbsp;/&nbsp;<code>regulated</code>)
-      and a mode (observe&nbsp;/&nbsp;ask&nbsp;/&nbsp;enforce).</p>
+    <p class="sub">One hook checks every Bash / Edit / Read / WebFetch / MCP call before it runs. Pick a profile — <code>personal</code>, <code>team</code>, <code>production</code>, <code>regulated</code> — and a mode.</p>
     <div class="grid">
-      <div class="card"><span class="tag block">Block</span>
-        <h3>Dangerous actions, stopped</h3>
-        <p>Reading secrets, <code>curl | bash</code>, <code>rm&nbsp;-rf</code>, disk wipes, data
-          exfiltration — refused before they run. Evasion-resistant: it parses commands, not strings.</p></div>
-      <div class="card"><span class="tag ask">Ask</span>
-        <h3>Risky actions, held</h3>
-        <p>Deploys (<code>terraform</code>/<code>kubectl</code>/<code>vercel</code>), migrations,
-          <code>git push</code>, dependency installs, edits to auth/billing/CI — paused for your approval.</p></div>
-      <div class="card"><span class="tag prove">Prove</span>
-        <h3>Every decision, logged</h3>
-        <p>A tamper-evident, hash-chained audit trail you can <code>verify</code> — proof of what your
-          agent was allowed to do, not just a log. Local, grep-able, no cloud.</p></div>
+      <div class="card"><span class="tag block">Block</span><h3>Dangerous actions, stopped</h3><p>Secrets, <code>curl | bash</code>, <code>rm -rf</code>, disk wipes, exfiltration — refused before they run. It parses commands, not strings, so evasions don’t slip past.</p></div>
+      <div class="card"><span class="tag ask">Ask</span><h3>Risky actions, held</h3><p>Deploys, migrations, <code>git push</code>, dependency installs, edits to auth/billing/CI — paused for your approval.</p></div>
+      <div class="card"><span class="tag prove">Prove</span><h3>Every decision, logged</h3><p>A tamper-evident audit trail you can <code>verify</code> — proof of what your agent was allowed to do. Local, no cloud.</p></div>
+    </div>
+  </section>
+
+  <section id="see">
+    <h2>You see it work.</h2>
+    <div class="see">
+      <ul>
+        <li><b>When it blocks or asks,</b> Claude Code shows you the reason — you’re never guessing.</li>
+        <li><b>When it’s safe,</b> it stays quiet — no noise on the actions you want.</li>
+        <li><b>Anytime,</b> read the log with <code>certior-guard log</code>, or prove it wasn’t tampered with using <code>certior-guard verify</code>.</li>
+      </ul>
+      <div class="box">
+        <span class="deny">⛔ deny</span>&nbsp;&nbsp;Read .env — secrets are never readable by an agent<br>
+        <span class="ask">✋ ask&nbsp;</span>&nbsp;&nbsp;terraform apply — approve before it runs<br>
+        <span class="ok">✓ allow</span>&nbsp;&nbsp;edit src/app.js · run tests<br><br>
+        <span class="dim">$ certior-guard log → 3 decisions · 1 blocked · 1 held · 1 allowed</span>
+      </div>
     </div>
   </section>
 
   <section id="teams">
     <div class="teams">
-      <div class="col">
+      <div>
         <h2>For teams &amp; enterprises</h2>
-        <p class="sub" style="margin-bottom:16px">Set the rules for AI agents once, enforce them across
-          every engineer and every agent, and prove to auditors what happened.</p>
+        <p class="sub" style="margin-bottom:18px">Set the rules once, enforce them across every engineer and every agent, and prove to auditors what happened.</p>
         <ul class="check">
           <li>Locked, shared policy your whole team inherits</li>
           <li>Centralized, tamper-evident audit across every dev</li>
-          <li>Approvals, kill-switch, SOC2 / HIPAA evidence export</li>
+          <li>Approvals, kill-switch, SOC2 / HIPAA evidence</li>
         </ul>
       </div>
-      <div class="col">
-        <p class="sub"><b class="accent">Agent-agnostic by design.</b> Starts with Claude Code; the
-          same policy engine extends to Cursor, Copilot, MCP, and CI agents — one neutral control
-          plane across all of them.</p>
+      <div>
+        <p class="sub"><b class="accent">Agent-agnostic by design.</b> Starts with Claude Code; the same policy engine extends to Cursor, Copilot, MCP, and CI agents — one neutral control plane across all of them.</p>
         <a class="btn primary" href="mailto:hello@certior.io?subject=Certior%20for%20teams">Talk to us →</a>
       </div>
     </div>
   </section>
-</div>
 
-<div class="wrap">
   <footer>
     <div>© 2026 Certior Systems Ltd</div>
-    <div>
-      <a href="https://github.com/certior/certior-guard">GitHub</a> ·
-      <a href="https://www.npmjs.com/package/certior-guard">npm</a> ·
-      <a href="mailto:hello@certior.io">hello@certior.io</a>
-    </div>
+    <div><a href="https://github.com/certior/certior-guard">GitHub</a> · <a href="https://www.npmjs.com/package/certior-guard">npm</a> · <a href="mailto:hello@certior.io">hello@certior.io</a></div>
   </footer>
 </div>
 </body>
