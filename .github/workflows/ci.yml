@@ -27,3 +27,8 @@ jobs:
           certior-guard test Read .env
           certior-guard test Bash 'terraform apply'
           echo '{"tool_name":"Read","tool_input":{"file_path":".env"}}' | certior-guard hook
+      - name: Smoke-test the self-contained plugin hook (no console script)
+        run: |
+          python -c "import json; json.load(open('.claude-plugin/plugin.json')); json.load(open('.claude-plugin/marketplace.json')); json.load(open('hooks/hooks.json'))"
+          out=$(echo '{"tool_name":"Read","tool_input":{"file_path":".env"}}' | CLAUDE_PLUGIN_ROOT="$PWD" python3 hooks/run.py)
+          echo "$out" | grep -q '"permissionDecision": "deny"'

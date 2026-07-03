@@ -33,17 +33,40 @@ receipt.
 
 ## Install
 
+Two independent paths — pick either.
+
+**From the terminal (pip):**
+
 ```bash
 pip install certior-guard        # pure stdlib, installs in seconds
 certior-guard init               # scans your repo, picks a profile, wires the hook
 ```
+
+**Inside Claude Code (plugin):** self-contained, no pip step — the plugin ships
+the engine and runs it with `python3` directly.
+
+```
+/plugin marketplace add certior/certior-guard
+/plugin install certior-guard@certior
+```
+
+That's it — safe `team` / `ask` defaults apply immediately. To customize, drop a
+`certior.yml` at your repo root (no restart needed):
+
+```yaml
+profile: team    # personal | team | production | regulated
+mode: ask        # observe | ask | enforce
+```
+
+Requires `python3` (3.11+) on `PATH`. If it's missing the hook fails open — never
+blocking your work — and warns you at session start.
 
 `init` detects your stack (Next.js, Prisma, Terraform, Stripe, GitHub Actions …)
 and recommends a profile. It writes:
 
 ```
 certior.yml               # your choice — edit any time, no restart
-.claude/settings.json     # the PreToolUse hook (merged, idempotent)
+.claude/settings.json     # the PreToolUse hook (pip path; the plugin wires its own)
 .certior/audit/           # local receipts, one JSONL line per decision
 ```
 
