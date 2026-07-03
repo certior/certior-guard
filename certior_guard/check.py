@@ -1,22 +1,12 @@
-"""Static policy analysis over the closed capability vocabulary.
+"""Policy analysis over the closed capability vocabulary.
 
-Because the capability set is finite and known (:mod:`certior_guard.capabilities`)
-and rules are globs over it, useful properties can be decided by exhaustive
-enumeration — no solver required:
-
-**Floor domination** (the safety invariant) — for every known capability on the
-always-deny floor, and every profile in every enforcing mode (``ask``/``enforce``),
-the resolved decision is ``deny``. This proves no profile or mode can open a hole
-in the floor: secrets, disk wipes, remote-code-exec and exfiltration stay blocked.
-
-**Dead rules** — a profile pattern that matches no known capability (a typo or an
-aspirational rule with no emitter yet).
-
-**Shadowed asks** — an ``ask`` pattern whose every matching capability is already
-blocked, so it can never actually prompt.
-
-This is an honest finite-model check, not a general SMT proof — but over this
-vocabulary it is complete for the properties above.
+The capability set is finite and rules are globs over it, so these are decided by
+exhaustive enumeration, no solver:
+  - floor domination — every always-deny capability resolves to ``deny`` under
+    every profile and enforcing mode (the safety invariant);
+  - dead rules — a pattern matching no known capability;
+  - shadowed asks — an ``ask`` pattern whose matches are all already blocked.
+A finite-model check, not an SMT proof, but complete over this vocabulary.
 """
 from __future__ import annotations
 

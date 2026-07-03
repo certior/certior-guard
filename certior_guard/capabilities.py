@@ -1,20 +1,11 @@
-"""The capability vocabulary — the closed set of actions the guard reasons about.
+"""The closed capability vocabulary the guard reasons over.
 
-Every tool call is reduced to one or more of these strings
-(:mod:`certior_guard.engine`, :mod:`certior_guard.shell_parse`), and every profile
-rule is a glob over them. Centralising the vocabulary here turns an implicit pile
-of strings into an explicit model, which is what lets ``certior-guard check``
-reason over a *closed world*: a profile rule that matches nothing here is dead,
-and the always-deny floor can be shown to dominate by exhaustive enumeration.
-
-``source`` records where a capability is classified:
-
-  ``file``      a file path (Read / Edit / Write)
-  ``net``       WebFetch / WebSearch
-  ``shell``     parsed from a Bash command
-  ``mcp``       an MCP tool call
-  ``reserved``  part of the model but classified by a later layer (content / MCP
-                inspection), not by the current shell/path heuristics
+Every tool call reduces to one or more of these strings and every profile rule is
+a glob over them, so ``certior-guard check`` can treat the set as a closed world:
+a rule matching nothing here is dead, and the always-deny floor can be shown to
+dominate by enumeration. ``source`` records where each is classified — ``file``,
+``net``, ``shell``, ``mcp``, or ``reserved`` (a later content/MCP layer, not the
+current heuristics).
 """
 from __future__ import annotations
 

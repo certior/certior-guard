@@ -1,18 +1,10 @@
-"""Verify the audit log: integrity (hash chain) and faithfulness (replay).
+"""Verify the audit log two independent ways.
 
-Two independent checks over ``.certior/audit/``:
-
-**Integrity** — recompute each receipt's hash and confirm every ``prev`` links to
-the preceding receipt. A single altered, inserted, or deleted line breaks the
-chain here, at a named sequence number. This is what makes the log *evidence*
-rather than a log.
-
-**Faithfulness** — reconstruct each decision's inputs and re-run the policy engine
-under the receipt's own recorded profile+mode. A mismatch means the recorded
-decision is not what the engine produces today: either the receipt was tampered
-with (usually already caught by integrity) or the policy/engine has since changed.
-
-Both are pure, offline, dependency-free.
+Integrity — recompute each receipt hash and confirm every ``prev`` links to the
+prior receipt; any altered, inserted, or deleted line breaks the chain at a named
+seq. Faithfulness — re-run each decision through the engine under its recorded
+profile+mode; a mismatch means the receipt no longer matches the policy. Both are
+pure and offline.
 """
 from __future__ import annotations
 

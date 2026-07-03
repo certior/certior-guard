@@ -1,25 +1,13 @@
 """Boundary profiles — safe defaults keyed to what you're protecting.
 
-A *profile* answers "what are you protecting?" — a personal repo, a team repo,
-a production service, or a regulated one — and expands into two tiers of rules:
+A profile expands into two tiers of glob rules over capability names: ``block``
+(forbidden) and ``ask`` (risky, pause for a human). A *mode* sets how the block
+tier is enforced:
 
-  * ``block`` — forbidden actions (secrets, destructive shell, prod deploys …)
-  * ``ask``   — risky-but-normal actions that pause for a human (push, migrate …)
-
-Rules are **glob patterns** over capability names (:func:`fnmatch.fnmatch`), not
-literal lists, so they match any spelling a shell produces and only ever
-*narrow* what the agent may do.
-
-On top of the profile sits a **mode** — how strictly the ``block`` tier is
-enforced:
-
-  * ``observe`` — never interrupt; just log what *would* have been blocked/asked
-  * ``ask``     — pause for approval on risky actions; still hard-deny the
-                  catastrophic floor (:data:`ALWAYS_DENY`: secrets, disk wipes,
-                  remote-code-exec, exfiltration)
-  * ``enforce`` — hard-deny the ``block`` tier, pause on the ``ask`` tier
-
-Pure stdlib, no dependencies.
+  * ``observe`` — never interrupt; log what would have been blocked/asked;
+  * ``ask``     — pause on risky actions; still hard-deny the catastrophic floor
+                  (:data:`ALWAYS_DENY`: secrets, disk wipes, RCE, exfiltration);
+  * ``enforce`` — hard-deny the block tier, pause on the ask tier.
 """
 from __future__ import annotations
 
@@ -69,9 +57,7 @@ def always_denied(cap: str) -> bool:
     return any(fnmatch(cap, p) for p in ALWAYS_DENY)
 
 
-# ── The menu ─────────────────────────────────────────────────────────────────
-# Ordered from least to most locked-down. Each layers onto the previous one.
-
+# Building blocks, ordered from least to most locked-down; each profile layers these.
 _SECRETS = ("secrets:read", "secrets:write")
 _DESTRUCTIVE = ("fs:destroy", "db:destroy")
 _EXFIL = ("*:exfiltrate", "remote:exfiltrate", "code:exec")

@@ -122,7 +122,6 @@ def run_init(
         else:
             chosen_mode = default_m
 
-    # Write everything.
     cfg_path = write_config(prof.key, chosen_mode, DEFAULT_AUDIT_DIR)
     os.makedirs(DEFAULT_AUDIT_DIR, exist_ok=True)
     settings_path = _wire_hook(scope)

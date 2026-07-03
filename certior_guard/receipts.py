@@ -1,19 +1,11 @@
-"""Local audit receipts — every decision logged, tamper-evident, no cloud.
+"""Local, tamper-evident audit receipts — one JSON object per line in
+``.certior/audit/YYYY-MM-DD.jsonl``.
 
-One JSON object per line, appended to ``.certior/audit/YYYY-MM-DD.jsonl``: a
-grep-able, diff-able, offline record of what the agent tried and what Certior did.
-
-The log is a **hash chain**. Each receipt carries ``seq`` (monotonic), ``prev``
-(the previous receipt's hash), and ``hash`` (SHA-256 over its own canonical
-content, ``prev`` included). Editing or deleting any past receipt breaks every
-link after it, so ``certior-guard verify`` can prove the log was not altered —
-the property that turns a log into evidence. ``policy_hash`` additionally binds
-each receipt to the exact rules in force, so a decision can be replayed against
-the policy that produced it.
-
-Writes are serialised with a best-effort directory lock (``flock`` where
-available) so concurrent Claude Code sessions extend one chain rather than forking
-it. Everything here is best-effort and never raises into the hook.
+The log is a hash chain: each receipt carries ``seq``, ``prev`` (the previous
+receipt's hash), and ``hash`` (SHA-256 over its own content). Altering or deleting
+any receipt breaks every later link, so ``certior-guard verify`` can prove the log
+is intact. Writes take a best-effort directory lock so concurrent sessions extend
+one chain. Best-effort throughout: never raises into the hook.
 """
 from __future__ import annotations
 

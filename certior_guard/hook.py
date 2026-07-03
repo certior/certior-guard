@@ -1,13 +1,7 @@
-"""PreToolUse hook entrypoint — the thing Claude Code actually runs.
+"""PreToolUse hook: read a tool-call envelope on stdin, decide it against the
+configured profile+mode, write a receipt, and emit the decision on stdout.
 
-Claude Code pipes a JSON envelope to this hook on stdin before every matched
-tool call::
-
-    {"tool_name": "Read", "tool_input": {"file_path": ".env"}, "session_id": "…"}
-
-We decide it against the configured profile+mode, write a local receipt, and
-emit a PreToolUse decision on stdout. **Fail-open**: any error exits 0 so a
-Certior fault can never block the user's normal workflow.
+Fail-open: any error exits 0 so a Certior fault never blocks normal work.
 """
 from __future__ import annotations
 
@@ -46,7 +40,6 @@ def run_hook(
     except Exception:
         return 0  # fail-open
 
-    # Log every decision (best-effort).
     try:
         target = (
             tool_input.get("command")
