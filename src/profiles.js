@@ -68,7 +68,7 @@ const PROFILE_LIST = [
     defaultMode: 'ask',
     block: [...SECRETS, ...DESTRUCTIVE, ...EXFIL],
     ask: [...PUSH, ...DEL, ...PUBLISH,
-      'prod:*', 'migrations:*', 'auth:write', 'billing:write', 'ci:write', 'deps:install'],
+      'prod:*', 'migrations:*', 'auth:write', 'billing:write', 'ci:write', 'deps:install', 'env:dump'],
   }),
   new Profile({
     key: 'production',
@@ -78,7 +78,7 @@ const PROFILE_LIST = [
     defaultMode: 'enforce',
     block: [...SECRETS, ...DESTRUCTIVE, ...EXFIL, 'prod:*'],
     ask: [...PUSH, ...DEL, ...PUBLISH,
-      'migrations:*', 'auth:write', 'billing:write', 'ci:write', 'deps:install'],
+      'migrations:*', 'auth:write', 'billing:write', 'ci:write', 'deps:install', 'env:dump'],
   }),
   new Profile({
     key: 'regulated',
@@ -88,7 +88,7 @@ const PROFILE_LIST = [
     defaultMode: 'enforce',
     block: [...SECRETS, ...DESTRUCTIVE, ...EXFIL, 'prod:*', '*:export', 'phi:export', 'data:export'],
     ask: [...PUSH, ...DEL, ...PUBLISH,
-      'migrations:*', 'auth:*', 'billing:*', 'ci:write', 'deps:install', 'phi:*'],
+      'migrations:*', 'auth:*', 'billing:*', 'ci:write', 'deps:install', 'phi:*', 'env:dump'],
   }),
 ];
 

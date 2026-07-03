@@ -86,6 +86,20 @@ test('deps:install is detected', () => {
   }
 });
 
+test('environment dumps are flagged (ask), wrapper use is not', () => {
+  for (const c of ['env', 'printenv', 'printenv AWS_SECRET_ACCESS_KEY', 'set']) {
+    assert.ok(capabilityFor('Bash', { command: c })[0].includes('env:dump'), c);
+  }
+  assert.ok(!capabilityFor('Bash', { command: 'env FOO=bar node app.js' })[0].includes('env:dump'));
+  assert.equal(d('Bash', { command: 'printenv' }, 'team', 'enforce'), 'ask');
+});
+
+test('decode-and-run is denied; bare decoding is allowed', () => {
+  assert.equal(d('Bash', { command: 'echo ZXZpbA== | base64 -d | sh' }, 'team', 'ask'), 'deny');
+  assert.equal(d('Bash', { command: 'eval "$(echo ZXZpbA== | base64 -d)"' }, 'team', 'ask'), 'deny');
+  assert.equal(d('Bash', { command: 'base64 -d payload.txt > out.txt' }), 'allow');
+});
+
 test('observe never blocks', () => {
   assert.equal(d('Read', { file_path: '.env' }, 'team', 'observe'), 'allow');
   assert.equal(d('Bash', { command: 'terraform apply' }, 'team', 'observe'), 'allow');

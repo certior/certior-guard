@@ -150,6 +150,10 @@ const INSTALLERS = new Set(['npm', 'pnpm', 'yarn', 'pip', 'pip3', 'pipx', 'uv', 
   'gem', 'bundle', 'cargo', 'go', 'apt', 'apt-get', 'brew', 'apk']);
 const INSTALL_VERBS = new Set(['install', 'add']);
 const DB_DANGER = /\bdrop\b|\btruncate\b|\bdelete\s+from\b/i;
+// Decode-and-run: base64/xxd/openssl decoding whose output is fed to a shell/eval.
+const DECODER = /base64\s+-{0,2}d\b|\bbase32\s+-d\b|\bxxd\b\s+-r|\bopenssl\b[^|]*\benc\b[^|]*-d/i;
+// A bare `env` used as a command (not `env VAR=val cmd`) dumps the environment.
+const ENV_DUMP = /(^|[\n;&|(]\s*)env\s*($|[\n;&|)])/;
 
 function isInstall(exe, args) {
   if (!INSTALLERS.has(exe)) return false;
@@ -168,9 +172,11 @@ function shellCapabilities(command) {
   const hasDownloader = parsed.commands.some((c) => DOWNLOADERS.has(c.exe));
   const hasShell = parsed.commands.some((c) => SHELLS.has(c.exe));
 
+  const hasEval = parsed.commands.some((c) => c.exe === 'eval');
   if (hasDownloader && hasShell && parsed.piped) add('code:exec', 'remote:exfiltrate');
-  if (parsed.hasDynamic && (hasShell || parsed.commands.some((c) => c.exe === 'eval'))) {
+  if (parsed.hasDynamic && (hasShell || hasEval)) {
     if (hasDownloader || /curl|wget/i.test(command)) add('code:exec', 'remote:exfiltrate');
+    else if (DECODER.test(command)) add('code:exec'); // decode-and-run a local payload
   }
 
   for (const c of parsed.commands) {
@@ -187,6 +193,10 @@ function shellCapabilities(command) {
     else if (exe === 'gh' && args.includes('release')) add('package:publish');
     else if (['psql', 'mysql', 'mongo', 'mongosh'].includes(exe) && DB_DANGER.test(args.join(' '))) add('db:destroy');
     else if (isInstall(exe, args)) add('deps:install');
+    else if (exe === 'printenv') add('env:dump');
+    else if (exe === 'set' && args.length === 0) add('env:dump');
+    else if (exe === 'export' && (args.length === 0 || args.includes('-p'))) add('env:dump');
+    else if (exe === 'declare' && args.some((a) => a.startsWith('-') && a.includes('p'))) add('env:dump');
     else if (READERS.has(exe) && args.some((a) => SECRET_PATH.test(a))) add('secrets:read');
     else if (INTERPRETERS.has(exe) && args.some((a) => SECRET_INLINE.test(a))) add('secrets:read');
     else if ((exe === 'source' || exe === '.') && args.some((a) => SECRET_PATH.test(a))) add('secrets:read');
@@ -197,6 +207,8 @@ function shellCapabilities(command) {
       && args.some((a) => ['-F', '-d', '--data', '--data-binary', '-T', '--upload-file'].includes(a))
       && args.some((a) => /^https?:\/\/(?!localhost|127\.)/.test(a))) add('data:exfiltrate');
   }
+
+  if (ENV_DUMP.test(command)) add('env:dump'); // bare `env` (not `env VAR=val cmd`)
 
   if (parsed.redirects.some((t) => /^\/dev\/(sd|nvme|mmcblk|vd|hd)/.test(t))) add('fs:destroy');
 

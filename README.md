@@ -103,9 +103,12 @@ blocked, as are secret reads via `source .env`, `cp .env /tmp/x`, or
 `node -e "readFileSync('.env')"`. Committed templates (`.env.example`,
 `.env.sample`) are not treated as secrets.
 
-It is a policy boundary, not a sandbox. It does not catch reads performed inside
-a program (`node app.js` that itself opens `.env`), environment dumps
-(`env` / `printenv`), or encoded/dynamic commands (`eval "$(… | base64 -d)"`).
+It is a policy boundary, not a sandbox. It flags environment dumps
+(`env` / `printenv`) and decode-and-run payloads (`… | base64 -d | sh`,
+`eval "$(… base64 -d)"`), but it cannot see a read performed *inside* a program
+(`node app.js` that itself opens `.env`) — that produces no tool call to inspect
+and needs OS-level isolation. Pair it with a sandbox to bound a determined
+adversary.
 
 ## Receipts
 

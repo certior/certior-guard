@@ -30,6 +30,7 @@ const KNOWN_CAPABILITIES = {
   'prod:deploy': ['shell', 'deploy (terraform/kubectl/vercel …)'],
   'package:publish': ['shell', 'publish a package/release'],
   'deps:install': ['shell', 'install a dependency (supply-chain surface)'],
+  'env:dump': ['shell', 'dump environment variables (which usually hold secrets)'],
   'mcp:read': ['mcp', 'read via an MCP tool'],
   'mcp:write': ['mcp', 'write via an MCP tool'],
   'mcp:send': ['mcp', 'send/publish via an MCP tool'],
