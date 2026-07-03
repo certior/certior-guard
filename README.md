@@ -5,6 +5,10 @@ call is checked before it runs and is **allowed**, **held for approval**, or
 **blocked** — each with a reason and a local receipt. Pure stdlib, no
 dependencies, no account.
 
+<p align="center">
+  <img src="assets/demo.gif" alt="certior-guard demo: Claude Code tries to read .env and curl|bash — blocked; terraform apply and git push — held for approval; edit code and run tests — allowed" width="740">
+</p>
+
 ## Install
 
 **Terminal (pip):**
