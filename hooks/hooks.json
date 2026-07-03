@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/run.py\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\"",
             "timeout": 15
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v python3 >/dev/null 2>&1 || printf 'certior-guard: python3 not found on PATH — the guard hook fails open (allows everything). Install Python 3.11+ to enable protection.\\n' >&2",
+            "command": "command -v node >/dev/null 2>&1 || printf 'certior-guard: node not found on PATH — the guard hook fails open (allows everything). Install Node 18+ to enable protection.\\n' >&2",
             "timeout": 10
           }
         ]

