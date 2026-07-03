@@ -34,6 +34,31 @@ def test_pipe_to_shell_denied(cmd):
     assert d("Bash", {"command": cmd}, mode="ask") == "deny"
 
 
+# ── Reading a secret through an indirect command is still a secret read ───────
+@pytest.mark.parametrize("cmd", [
+    "source .env",                                     # loads secrets into env
+    ". ./.env",
+    "python3 -c \"print(open('.env').read())\"",       # inline interpreter read
+    "node -e \"console.log(require('fs').readFileSync('.env','utf8'))\"",
+    "perl -pe 1 .env",
+    "cp .env /tmp/x",                                  # copy the secret out
+    "mv .aws/credentials /tmp/y",
+])
+def test_indirect_secret_read_denied(cmd):
+    assert d("Bash", {"command": cmd}, mode="ask") == "deny"
+
+
+# ── …but committed env *templates* are not secrets ───────────────────────────
+@pytest.mark.parametrize("tool,ti", [
+    ("Read", {"file_path": ".env.example"}),
+    ("Bash", {"command": "cat .env.sample"}),
+    ("Bash", {"command": "cp .env.example .env"}),
+    ("Bash", {"command": "python3 -c \"print('hello world')\""}),
+])
+def test_env_templates_and_benign_interp_allowed(tool, ti):
+    assert d(tool, ti, mode="enforce") == "allow"
+
+
 @pytest.mark.parametrize("cmd", ["rm -rf /", "dd if=/dev/zero of=/dev/sda", "shred x"])
 def test_destructive_denied(cmd):
     # fs:destroy is floor-denied; rm -rf is fs:delete (ask), so check the destroyers.
