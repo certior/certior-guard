@@ -1,7 +1,6 @@
 """Map a Claude Code tool call to a capability, then decide it against a profile.
 
-This is the whole brain of Certior Guard, and it is deliberately small and
-dependency-free:
+The decision logic is deliberately small and dependency-free:
 
     tool call  ──capability_for──▶  capability strings  ──decide──▶  allow / ask / deny
 

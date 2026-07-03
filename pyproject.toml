@@ -18,13 +18,13 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Security",
 ]
-# Zero runtime dependencies — pure stdlib. This is the point: it installs in
-# seconds and can never conflict with your project's packages.
+# Zero runtime dependencies — pure stdlib, so it installs in seconds and cannot
+# conflict with your project's packages.
 dependencies = []
 
 [project.urls]
 Homepage = "https://certior.io"
-Repository = "https://github.com/certior/certior"
+Repository = "https://github.com/certior/certior-guard"
 
 [project.scripts]
 certior-guard = "certior_guard.cli:main"

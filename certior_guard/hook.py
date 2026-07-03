@@ -7,8 +7,7 @@ tool call::
 
 We decide it against the configured profile+mode, write a local receipt, and
 emit a PreToolUse decision on stdout. **Fail-open**: any error exits 0 so a
-Certior hiccup can never wedge the user's editor — a guard that blocks all work
-gets uninstalled.
+Certior fault can never block the user's normal workflow.
 """
 from __future__ import annotations
 
@@ -47,8 +46,7 @@ def run_hook(
     except Exception:
         return 0  # fail-open
 
-    # Log every decision (best-effort). This is the "every decision is logged"
-    # promise and the "receipt saved" moment.
+    # Log every decision (best-effort).
     try:
         target = (
             tool_input.get("command")

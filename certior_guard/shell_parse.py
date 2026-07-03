@@ -184,7 +184,7 @@ def analyze(command: str) -> Optional[ParsedShell]:
 
 _SECRET_PATH = re.compile(
     r"(^|/)\.env(\.|$)|(^|/)(secrets?|credentials?)(/|\.|$)|\.pem$|\.key$|"
-    r"id_rsa|/\.aws/|/\.ssh/|\.pfx$|\.p12$|\.netrc",
+    r"id_rsa|/\.aws/|/\.ssh/|\.pfx$|\.p12$|\.netrc|service-account\.json|\.npmrc$|\.pypirc$",
     re.IGNORECASE,
 )
 _READERS = {"cat", "less", "more", "head", "tail", "grep", "egrep", "strings",

@@ -1,12 +1,10 @@
 """Local audit receipts — every decision is logged, no cloud, no login.
 
-One JSON object per line, appended to ``.certior/audit/YYYY-MM-DD.jsonl``. This
-is the "every decision is logged" promise and the "receipt saved" moment: a
+One JSON object per line, appended to ``.certior/audit/YYYY-MM-DD.jsonl``: a
 grep-able, diff-able, offline record of what the agent tried and what Certior did.
 
 A ``policy_hash`` binds each receipt to the exact rule set in force, so a receipt
-can later be replayed and checked (the enterprise wedge) without any of that
-machinery being in the user's way now.
+can later be replayed and checked against the policy that produced it.
 """
 from __future__ import annotations
 
