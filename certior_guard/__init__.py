@@ -8,14 +8,19 @@ minutes.
 
 The public surface:
 
-    from certior_guard.engine import capability_for, decide
+    from certior_guard.engine import capability_for, decide, resolve
     from certior_guard.profiles import get_profile, list_profiles
+    from certior_guard.check import check      # policy soundness
+    from certior_guard.verify import verify    # audit-log integrity + replay
 """
 from __future__ import annotations
 
 __version__ = "0.1.0"
 
-from certior_guard.engine import capability_for, decide
+from certior_guard.check import check
+from certior_guard.engine import capability_for, decide, resolve
 from certior_guard.profiles import get_profile, list_profiles
+from certior_guard.verify import verify
 
-__all__ = ["capability_for", "decide", "get_profile", "list_profiles", "__version__"]
+__all__ = ["capability_for", "decide", "resolve", "get_profile", "list_profiles",
+           "check", "verify", "__version__"]

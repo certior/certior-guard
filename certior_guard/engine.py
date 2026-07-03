@@ -94,14 +94,21 @@ def capability_for(tool_name: str, tool_input: Dict[str, Any]) -> Tuple[List[str
 # ── Decision ─────────────────────────────────────────────────────────────────
 
 def decide(tool_name: str, tool_input: Dict[str, Any], profile: Profile, mode: str) -> Dict[str, str]:
-    """Decide a tool call. Returns ``{decision, reason, capability, would}``.
-
-    ``decision`` is what Certior tells Claude Code now (``allow``/``ask``/``deny``).
-    ``would`` is what the rules say regardless of mode — so ``observe`` mode can
-    report "would have blocked" without actually interrupting.
-    """
+    """Decide a tool call: map it to capabilities, then resolve against the policy."""
     caps, _preview = capability_for(tool_name, tool_input)
+    return resolve(caps, profile, mode)
 
+
+def resolve(caps: List[str], profile: Profile, mode: str) -> Dict[str, str]:
+    """Resolve capability candidates against a profile+mode.
+
+    Returns ``{decision, reason, capability, would}``. ``decision`` is what Certior
+    tells Claude Code now (``allow``/``ask``/``deny``); ``would`` is what the rules
+    say regardless of mode, so ``observe`` can report a would-be block without
+    interrupting. Kept separate from :func:`capability_for` so both the live hook
+    and ``certior-guard check`` (which reasons over bare capabilities) share one
+    source of truth for precedence.
+    """
     blocked = next((c for c in caps if profile.blocks(c)), None)
     asked = next((c for c in caps if profile.asks(c)), None)
     floor = next((c for c in caps if always_denied(c)), None)

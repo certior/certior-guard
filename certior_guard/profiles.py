@@ -75,8 +75,8 @@ def always_denied(cap: str) -> bool:
 _SECRETS = ("secrets:read", "secrets:write")
 _DESTRUCTIVE = ("fs:destroy", "db:destroy")
 _EXFIL = ("*:exfiltrate", "remote:exfiltrate", "code:exec")
-_DEPLOY = ("prod:deploy", "prod:write", "*:deploy")
-_PUBLISH = ("package:publish", "*:release")
+_DEPLOY = ("prod:deploy", "prod:write", "*:deploy")   # for profiles that don't block prod:*
+_PUBLISH = ("package:publish",)
 _PUSH = ("git:push", "git:merge")
 _DELETE = ("fs:delete",)
 
@@ -84,7 +84,8 @@ _PROFILES: Tuple[Profile, ...] = (
     Profile(
         key="personal",
         name="Personal repo",
-        tagline="Solo dev. Block secrets & destructive commands; ask before pushes and publishes.",
+        tagline="Solo dev. Block secrets & destructive commands; ask before pushes, "
+                "publishes and deploys.",
         default_mode="ask",
         block_patterns=_SECRETS + _DESTRUCTIVE + _EXFIL,
         ask_patterns=_PUSH + _DELETE + _PUBLISH + _DEPLOY,
@@ -93,31 +94,33 @@ _PROFILES: Tuple[Profile, ...] = (
         key="team",
         name="Startup / team repo",
         tagline="Block secrets & destructive commands; ask before deploys, migrations, "
-                "auth/billing edits, CI/CD, and pushes to protected branches.",
+                "auth/billing edits, CI/CD, dependency installs, and pushes.",
         default_mode="ask",
         block_patterns=_SECRETS + _DESTRUCTIVE + _EXFIL,
-        ask_patterns=_PUSH + _DELETE + _PUBLISH + _DEPLOY
-        + ("migrations:*", "auth:write", "billing:write", "ci:write", "prod:*"),
+        # prod:* here means "ask before anything prod" (deploy or infra edit).
+        ask_patterns=_PUSH + _DELETE + _PUBLISH
+        + ("prod:*", "migrations:*", "auth:write", "billing:write", "ci:write", "deps:install"),
     ),
     Profile(
         key="production",
         name="Production service",
-        tagline="Enforce: no prod deploys, IAM/Terraform/k8s changes, DB drops, or secret "
-                "access without approval. Ask before migrations & dependency changes.",
+        tagline="Enforce: prod deploys and infra edits are blocked outright; secret access, "
+                "DB drops and exfiltration too. Ask before migrations, auth/billing & installs.",
         default_mode="enforce",
+        # prod:* is a hard block here (enforce) — no unattended deploys or infra edits.
         block_patterns=_SECRETS + _DESTRUCTIVE + _EXFIL + ("prod:*",),
-        ask_patterns=_PUSH + _DELETE + _PUBLISH + _DEPLOY
+        ask_patterns=_PUSH + _DELETE + _PUBLISH
         + ("migrations:*", "auth:write", "billing:write", "ci:write", "deps:install"),
     ),
     Profile(
         key="regulated",
         name="Regulated (SOC2 / HIPAA)",
-        tagline="Enforce mode with strong receipts. Block secrets, data export, and "
-                "destructive DB ops; ask before access-control, infra & billing changes.",
+        tagline="Enforce with strong receipts. Block secrets, prod changes, data/PHI export "
+                "and destructive DB ops; ask before access-control, billing & installs.",
         default_mode="enforce",
         block_patterns=_SECRETS + _DESTRUCTIVE + _EXFIL
         + ("prod:*", "*:export", "phi:export", "data:export"),
-        ask_patterns=_PUSH + _DELETE + _PUBLISH + _DEPLOY
+        ask_patterns=_PUSH + _DELETE + _PUBLISH
         + ("migrations:*", "auth:*", "billing:*", "ci:write", "deps:install", "phi:*"),
     ),
 )

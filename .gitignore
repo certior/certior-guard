@@ -20,3 +20,6 @@ certior.yml
 *.swp
 .idea/
 .vscode/
+
+# Local Claude Code state (plugin repo)
+.claude/

@@ -2,10 +2,13 @@
 
     certior-guard init          scan the repo, pick a profile, wire the hook
     certior-guard hook          PreToolUse entrypoint (wired by init)
+    certior-guard demo          show the block moments (no setup needed)
     certior-guard log           show recent decisions
+    certior-guard verify        prove the audit log is intact and faithful
+    certior-guard check         analyse the policy (floor invariant, dead rules)
     certior-guard status        show the active profile/mode
-    certior-guard uninstall     remove the hook wiring
     certior-guard test          dry-run a tool call against the active policy
+    certior-guard uninstall     remove the hook wiring
 """
 from __future__ import annotations
 
@@ -41,7 +44,7 @@ def _cmd_status(_args) -> int:
 
 
 def _cmd_log(args) -> int:
-    from certior_guard.receipts import read_recent
+    from certior_guard.receipts import read_all, read_recent
     cfg = load_config()
     rows = read_recent(cfg["audit_dir"], limit=args.n)
     if not rows:
@@ -53,7 +56,61 @@ def _cmd_log(args) -> int:
         tgt = str(r.get("target", ""))[:60]
         print(f"{icon.get(d, '·')} {r.get('timestamp','')}  {d:5} {r.get('tool',''):10} "
               f"{r.get('capability',''):18} {tgt}")
+    # Totals across the whole log, not just the shown page.
+    allrows = read_all(cfg["audit_dir"])
+    n = {"deny": 0, "ask": 0, "allow": 0}
+    for r in allrows:
+        n[str(r.get("decision"))] = n.get(str(r.get("decision")), 0) + 1
+    print(f"\n{len(allrows)} decisions logged · "
+          f"⛔ {n['deny']} blocked · ✋ {n['ask']} held · ✓ {n['allow']} allowed")
     return 0
+
+
+def _cmd_demo(args) -> int:
+    from certior_guard.demo import run_demo
+    return run_demo(profile_key=args.profile, mode=args.mode)
+
+
+def _cmd_verify(args) -> int:
+    from certior_guard.verify import verify
+    cfg = load_config()
+    rep = verify(cfg["audit_dir"])
+    if rep["total"] == 0:
+        print(f"No receipts to verify in {cfg['audit_dir']}/.")
+        return 0
+    if rep["integrity_ok"]:
+        print(f"✓ integrity: {rep['chained']} receipts, hash chain intact (no edits or deletions)")
+    else:
+        print(f"⛔ integrity: chain BROKEN at seq {rep['break_at']} — {rep['break_reason']}")
+    if rep["drift"]:
+        print(f"⚠ faithfulness: {len(rep['drift'])}/{rep['replayed']} decisions differ from the current policy:")
+        for dft in rep["drift"][:10]:
+            print(f"    seq {dft['seq']}  {dft['tool']} {str(dft['target'])[:40]}  "
+                  f"{dft['recorded']} → {dft['now']}")
+    else:
+        print(f"✓ faithfulness: {rep['replayed']} decisions replay identically under the current policy")
+    return 0 if rep["ok"] else 1
+
+
+def _cmd_check(args) -> int:
+    from certior_guard.check import check
+    rep = check()
+    if rep["floor_ok"]:
+        print(f"✓ always-deny floor holds: {rep['checks']} checks "
+              f"({rep['floor_size']} capabilities × profiles × modes) — no override path")
+    else:
+        print(f"⛔ FLOOR VIOLATION — {len(rep['violations'])} case(s) where a floor capability is not denied:")
+        for v in rep["violations"][:10]:
+            print(f"    {v['profile']} · {v['mode']} · {v['capability']}")
+    for p in rep["profiles"]:
+        notes = []
+        if p["dead_rules"]:
+            notes.append("dead rules: " + ", ".join(p["dead_rules"]))
+        if p["shadowed_asks"]:
+            notes.append("shadowed asks: " + ", ".join(p["shadowed_asks"]))
+        if notes:
+            print(f"  {p['profile']}: " + " · ".join(notes))
+    return 0 if rep["floor_ok"] else 1
 
 
 def _cmd_uninstall(args) -> int:
@@ -123,9 +180,22 @@ def main(argv: List[str] | None = None) -> int:
 
     sub.add_parser("status", help="Show the active profile and mode.").set_defaults(func=_cmd_status)
 
+    p_demo = sub.add_parser("demo", help="Show the block moments (no setup needed).")
+    p_demo.add_argument("--profile", default="team", choices=list(PROFILES))
+    p_demo.add_argument("--mode", default="enforce", choices=["observe", "ask", "enforce"])
+    p_demo.set_defaults(func=_cmd_demo)
+
     p_log = sub.add_parser("log", help="Show recent decisions (receipts).")
     p_log.add_argument("-n", type=int, default=20, help="how many to show")
     p_log.set_defaults(func=_cmd_log)
+
+    sub.add_parser(
+        "verify", help="Prove the audit log is intact (hash chain) and faithful (replay)."
+    ).set_defaults(func=_cmd_verify)
+
+    sub.add_parser(
+        "check", help="Analyse the policy: floor invariant, dead & shadowed rules."
+    ).set_defaults(func=_cmd_check)
 
     p_un = sub.add_parser("uninstall", help="Remove the Claude Code hook wiring.")
     p_un.add_argument("--scope", choices=["project", "user"], default="project")

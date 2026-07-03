@@ -68,11 +68,13 @@ editing app code, tests, and local branches are allowed.
 ## Commands
 
 ```bash
+certior-guard demo                            # show the block moments (no setup needed)
 certior-guard init                            # set up (scan + wizard)
 certior-guard status                          # show active profile/mode
-certior-guard log                             # recent decisions
+certior-guard log                             # recent decisions + totals
 certior-guard test Bash 'terraform apply'     # dry-run a call against the policy
-certior-guard test Read .env
+certior-guard verify                          # prove the audit log is intact & faithful
+certior-guard check                           # analyse the policy (see below)
 certior-guard uninstall                       # remove the hook (keeps config + receipts)
 ```
 
@@ -99,8 +101,32 @@ Each decision appends one line to `.certior/audit/YYYY-MM-DD.jsonl`:
  "policy_hash":"sha256:…","timestamp":"2026-07-03T21:04:12Z","verifier":"certior-guard"}
 ```
 
-Local, grep-able, no cloud. `policy_hash` binds each receipt to the rules in
-force at the time.
+Local, grep-able, no cloud. The log is a **hash chain** — each receipt carries the
+previous one's hash — so editing or deleting any past decision is detectable:
+
+```bash
+certior-guard verify
+# ✓ integrity: 128 receipts, hash chain intact (no edits or deletions)
+# ✓ faithfulness: 128 decisions replay identically under the current policy
+```
+
+`verify` also *replays* each recorded decision through the engine, so a receipt
+can be proven to match the policy that produced it — not just trusted.
+
+## Checking the policy
+
+The capability set is finite and known, so `certior-guard check` decides real
+properties by exhaustive enumeration — no solver, no dependencies:
+
+```bash
+certior-guard check
+# ✓ always-deny floor holds: 56 checks (7 capabilities × profiles × modes) — no override path
+```
+
+It proves the always-deny floor (secrets, disk wipes, remote-code-exec,
+exfiltration) can never be opened by any profile or mode, and flags dead rules
+(matching no capability) and shadowed `ask` rules (already blocked). Useful when
+you edit `certior.yml` or add your own rules.
 
 ## License
 

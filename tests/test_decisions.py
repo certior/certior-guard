@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import pytest
 
+from certior_guard.check import check
 from certior_guard.engine import capability_for, decide
 from certior_guard.profiles import get_profile
+from certior_guard.receipts import policy_hash, read_all, write_receipt
+from certior_guard.verify import verify
 
 
 def d(tool, ti, profile="team", mode="enforce"):
@@ -106,3 +109,60 @@ def test_production_blocks_prod_writes():
 
 def test_migration_asks_on_team():
     assert d("Edit", {"file_path": "prisma/migrations/001.sql"}, profile="team", mode="enforce") == "ask"
+
+
+def test_deps_install_detected():
+    for cmd in ("npm install left-pad", "pip install requests", "cargo add serde", "npm i"):
+        caps, _ = capability_for("Bash", {"command": cmd})
+        assert "deps:install" in caps
+
+
+# ── Policy soundness: the shipped profiles are provably safe & clean ─────────
+def test_always_deny_floor_holds():
+    rep = check()
+    assert rep["floor_ok"], rep["violations"]
+    assert rep["checks"] > 0
+
+
+def test_no_dead_or_shadowed_rules():
+    for p in check()["profiles"]:
+        assert p["dead_rules"] == [], f"{p['profile']}: dead {p['dead_rules']}"
+        assert p["shadowed_asks"] == [], f"{p['profile']}: shadowed {p['shadowed_asks']}"
+
+
+# ── Audit log: tamper-evident and replayable ─────────────────────────────────
+def _seed(audit_dir):
+    for tool, target, dec, cap in [
+        ("Read", ".env", "deny", "secrets:read"),
+        ("Bash", "terraform apply", "ask", "prod:deploy"),
+        ("Edit", "src/app.py", "allow", "files:write"),
+    ]:
+        write_receipt(audit_dir=str(audit_dir), tool=tool, target=target, decision=dec,
+                      would=dec, capability=cap, reason="t", profile_key="team",
+                      mode="enforce", policy_hash=policy_hash({"k": 1}, "enforce"))
+
+
+def test_clean_log_verifies(tmp_path):
+    _seed(tmp_path)
+    rep = verify(str(tmp_path))
+    assert rep["ok"] and rep["integrity_ok"] and not rep["drift"]
+    rows = read_all(str(tmp_path))
+    assert [r["seq"] for r in rows] == [1, 2, 3]
+    assert all(c["prev"] == p["hash"] for p, c in zip(rows, rows[1:]))
+
+
+def test_edit_breaks_integrity_and_replay(tmp_path):
+    _seed(tmp_path)
+    f = next(tmp_path.glob("*.jsonl"))
+    f.write_text(f.read_text().replace('"decision": "deny"', '"decision": "allow"'))
+    rep = verify(str(tmp_path))
+    assert not rep["integrity_ok"] and rep["break_at"] == 1
+    assert any(x["recorded"] == "allow" and x["now"] == "deny" for x in rep["drift"])
+
+
+def test_deletion_breaks_the_chain(tmp_path):
+    _seed(tmp_path)
+    f = next(tmp_path.glob("*.jsonl"))
+    lines = f.read_text().splitlines()
+    f.write_text("\n".join([lines[0], lines[2]]) + "\n")  # drop the middle receipt
+    assert verify(str(tmp_path))["integrity_ok"] is False

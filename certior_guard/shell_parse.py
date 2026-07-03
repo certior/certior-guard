@@ -24,7 +24,7 @@ attacker can still hide intent. The goal is to move the bar from "fooled by a
 pair of quotes" to "needs real obfuscation", and to flag dynamic constructs
 (``$(…)``, ``eval``, ``base64 -d``) so a boundary can treat them conservatively.
 Pure stdlib, no dependencies, and fail-safe: any parse failure returns ``None``
-so the caller can fall back to the legacy regex rules.
+so the caller can treat the command as an opaque exec rather than guess.
 """
 from __future__ import annotations
 
@@ -196,7 +196,19 @@ _DESTROYERS = {"dd", "shred", "wipefs", "blkdiscard"}
 _DEPLOYERS = {"kubectl", "terraform", "helm", "serverless", "vercel", "netlify",
               "fly", "flyctl", "pulumi", "ansible-playbook", "aws"}
 _DEPLOY_VERBS = {"apply", "deploy", "destroy", "delete", "up", "provision"}
+# Package managers whose install/add pulls third-party code — a supply-chain surface.
+_INSTALLERS = {"npm", "pnpm", "yarn", "pip", "pip3", "pipx", "uv", "poetry",
+               "gem", "bundle", "cargo", "go", "apt", "apt-get", "brew", "apk"}
+_INSTALL_VERBS = {"install", "add"}
 _DB_DANGER = re.compile(r"\bdrop\b|\btruncate\b|\bdelete\s+from\b", re.IGNORECASE)
+
+
+def _is_install(exe: str, args: List[str]) -> bool:
+    if exe not in _INSTALLERS:
+        return False
+    if any(a in _INSTALL_VERBS for a in args):
+        return True
+    return (exe == "npm" and args[:1] == ["i"]) or (exe == "go" and "get" in args)
 
 
 def shell_capabilities(command: str) -> Optional[List[str]]:
@@ -251,6 +263,8 @@ def shell_capabilities(command: str) -> Optional[List[str]]:
             add("package:publish")
         elif exe in ("psql", "mysql", "mongo", "mongosh") and _DB_DANGER.search(" ".join(args)):
             add("db:destroy")
+        elif _is_install(exe, args):
+            add("deps:install")
         elif exe in _READERS and any(SECRET_PATH.search(a) for a in args):
             add("secrets:read")
         elif exe in _INTERPRETERS and any(SECRET_INLINE.search(a) for a in args):
