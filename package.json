@@ -2,16 +2,42 @@
   "name": "certior-guard",
   "version": "0.1.0",
   "description": "Safe defaults for Claude Code: block secrets & dangerous commands, ask before deploys/migrations, log every decision. Zero dependencies.",
-  "keywords": ["claude-code", "security", "guardrail", "policy", "agent", "safety", "hook"],
+  "keywords": [
+    "claude-code",
+    "security",
+    "guardrail",
+    "policy",
+    "agent",
+    "safety",
+    "hook"
+  ],
   "homepage": "https://github.com/certior/certior-guard",
-  "repository": {"type": "git", "url": "https://github.com/certior/certior-guard.git"},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/certior/certior-guard.git"
+  },
   "license": "Apache-2.0",
   "author": "Certior <hello@certior.io>",
   "type": "commonjs",
-  "bin": {"certior-guard": "bin/certior-guard.js"},
+  "bin": {
+    "certior-guard": "bin/certior-guard.js"
+  },
   "main": "index.js",
-  "engines": {"node": ">=18"},
-  "files": ["src", "bin", "hooks", ".claude-plugin", "assets", "index.js", "README.md", "LICENSE"],
-  "scripts": {"test": "node --test test/"},
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "src",
+    "bin",
+    "hooks",
+    ".claude-plugin",
+    "assets",
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/"
+  },
   "dependencies": {}
 }
