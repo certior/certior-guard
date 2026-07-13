@@ -1,9 +1,14 @@
 # Certior Guard
 
-A policy hook for Claude Code. Every `Bash` / `Edit` / `Read` / `WebFetch` / MCP
-call is checked before it runs and is **allowed**, **held for approval**, or
-**blocked**, each with a reason and a local receipt. Zero dependencies, no
-account.
+You let Claude Code run on its own, and most of the time that is fine. But the
+same agent that edits a test can also read your `.env`, pipe a script from the
+web into your shell, wipe a directory, or push to prod, and in auto-accept mode
+nothing stops it until after it has happened.
+
+Certior Guard is a policy hook that checks every `Bash` / `Edit` / `Read` /
+`WebFetch` / MCP call before it runs, and **allows** it, **holds** it for
+approval, or **blocks** it, each with a reason and a local receipt. Zero
+dependencies, no account.
 
 <p align="center">
   <img src="assets/demo.gif" alt="certior-guard demo: Claude Code tries to read .env and curl|bash, blocked; terraform apply and git push, held for approval; edit code and run tests, allowed" width="740">
